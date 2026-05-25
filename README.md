@@ -75,7 +75,7 @@ Operacionalização, propriedade de dados e roadmap.
 - Propriedade dos dados entre módulos e impacto nos times
 - Trade-offs residuais, riscos, roadmap e referências
 
-## Diagramas C4 — Versão Structurizr
+## Diagramas C4: Versão Structurizr
 
 Os mesmos três níveis de C4 estão também versionados em [`c4-structurizr/workspace.dsl`](./c4-structurizr/workspace.dsl), no DSL oficial do Structurizr (a ferramenta de referência do C4 Model, mantida pelo Simon Brown). Os diagramas em Mermaid embutidos no relatório foram escolhidos pela simplicidade de renderização em texto puro; a versão em DSL serve como fonte única para gerar variantes (PNG, SVG, PlantUML) e como prova de que a estrutura segue o padrão C4 canônico.
 

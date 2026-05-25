@@ -1,11 +1,11 @@
 ---
-title: "Arquitetura de Sistema de Venda de Ingressos Online — Decisões, Trade-offs e Modelo C4"
+title: "Arquitetura de Sistema de Venda de Ingressos Online, Decisões, Trade-offs e Modelo C4"
 subtitle: "Monólito Modular com Pipeline de Admissão e Comunicação Orientada a Eventos"
 author: "Christian Chiavelli"
-discipline: "Arquitetura de Software — Pós-Graduação"
+discipline: "Arquitetura de Software, Pós-Graduação"
 date: "2026-05-24"
 version: "1.0"
-status: "Final — Entrega Acadêmica"
+status: "Final, Entrega Acadêmica"
 ---
 
 # Sumário
@@ -19,7 +19,7 @@ status: "Final — Entrega Acadêmica"
 7. [Decisões Arquiteturais (ADRs)](#7-decisões-arquiteturais-adrs)
 8. [Avaliação Comparativa de Estilos Arquiteturais](#8-avaliação-comparativa-de-estilos-arquiteturais)
 9. [Design Arquitetural](#9-design-arquitetural)
-10. [Modelo C4 — Visões em Três Níveis](#10-modelo-c4--visões-em-três-níveis)
+10. [Modelo C4, Visões em Três Níveis](#10-modelo-c4--visões-em-três-níveis)
 11. [Contratos de Serviço](#11-contratos-de-serviço)
 12. [Consistência Forte vs Consistência Eventual](#12-consistência-forte-vs-consistência-eventual)
 13. [Propriedade dos Dados](#13-propriedade-dos-dados)
@@ -83,19 +83,19 @@ A **equipe de engenharia** quer poder evoluir o sistema sem medo de quebrar cois
 
 A ordem aqui não é decorativa. Ela é a função de fitness arquitetural do sistema. Toda decisão de design subsequente é avaliada contra esta hierarquia.
 
-### Driver 1 — Confiabilidade / Consistência de Dados (`crítico, inegociável`)
+### Driver 1: Confiabilidade / Consistência de Dados (`crítico, inegociável`)
 
 **Manifesto:** o mesmo assento jamais pode ser vendido duas vezes. Double-booking é o pesadelo do negócio: gera reembolso, hostilidade do comprador, dano reputacional desproporcional ao prejuízo financeiro direto, e, em casos de eventos sem ingressos remanescentes, algo que funciona na prática como fraude perceptual.
 
 **Implicação arquitetural:** o seat-locking exige **consistência forte e linearizável** no ponto de reserva. Consistência eventual é inaceitável neste subdomínio. Isso elimina, no caminho crítico, soluções como CRDTs ou eventual replication entre regiões.
 
-### Driver 2 — Escalabilidade Elástica para Picos
+### Driver 2: Escalabilidade Elástica para Picos
 
 **Manifesto:** uma venda de show popular pode ter 30k a 80k usuários acessando simultaneamente nos primeiros 30 a 60 segundos. O regime fora desses picos é dramaticamente diferente, tipo 100x menos carga. Provisionar para o pico permanentemente é antieconômico.
 
 **Implicação arquitetural:** elasticidade horizontal na camada de admissão e nas camadas stateless; um **mecanismo explícito de absorção de pico** (virtual waiting room); separação clara entre carga não-crítica (browsing) e carga transacional (reserva e pagamento).
 
-### Driver 3 — Time-to-Market e Simplicidade
+### Driver 3: Time-to-Market e Simplicidade
 
 **Manifesto:** este é um sistema novo, com equipe enxuta, sem maturidade operacional consolidada em microsserviços distribuídos. O custo de um sistema distribuído mal operado é maior do que o custo de um sistema bem modularizado. Time-to-market vence sofisticação prematura.
 
@@ -272,7 +272,7 @@ O risco clássico em sistemas de venda em pico é projetar para as característi
 
 Arquitetura é escolha. Todo atributo que você prioriza cria pressão contrária em outro. O que listo abaixo são os trade-offs mais relevantes deste sistema, com a posição que adotei e o raciocínio por trás.
 
-## 6.1. Conflito 1 — Consistência Forte vs Disponibilidade (Teorema CAP)
+## 6.1. Conflito 1: Consistência Forte vs Disponibilidade (Teorema CAP)
 
 O Driver 1 exige consistência linearizável no seat-locking. O Driver 2 exige alta disponibilidade no pico. Em uma partição de rede entre nó primário e réplica do banco, o CAP nos obriga a escolher.
 
@@ -280,7 +280,7 @@ No subdomínio de Reserva e Pagamento, adotei **CP**: em caso de partição, pre
 
 A lógica é direta: vender duas vezes o mesmo assento é pior do que recusar uma venda. O custo de um 503 é finito e recuperável. O custo de um double-booking é reputacional e, eventualmente, legal. A mitigação principal é multi-AZ síncrono no banco, que minimiza a probabilidade de partições significativas; e a rota de leitura do Catálogo é separada, com staleness aceitável.
 
-## 6.2. Conflito 2 — Time-to-Market vs Escalabilidade Granular
+## 6.2. Conflito 2: Time-to-Market vs Escalabilidade Granular
 
 Microsserviços oferecem escalabilidade granular: escalar só o módulo de Reserva durante picos, sem inflar o resto. Monólito modular escala em granularidade de processo inteiro, o que é mais grosseiro. Mas microsserviços impõem custo operacional alto desde o dia 1.
 
@@ -288,7 +288,7 @@ A posição: monólito modular agora, com extração cirúrgica de Reserva quand
 
 No regime atual, escalar horizontalmente o monólito inteiro (stateless, exceto pela conexão com o banco) é barato e linear. O gargalo não é CPU dos pods, é o banco. Quebrar em serviços antes de tocar o gargalo real não resolve o problema; cria outros. A regra que sigo: só pague custo de microsserviço quando tiver benefício concreto de microsserviço para colher.
 
-## 6.3. Conflito 3 — Fairness Percebida vs Performance Pura
+## 6.3. Conflito 3: Fairness Percebida vs Performance Pura
 
 Servir o usuário mais rápido, sem fila, seria ótimo para latência média. Mas num pico de 50 mil pessoas no segundo zero, atendê-los todos imediatamente derruba o banco. E pior: usuários percebem essa derrubada como injustiça, porque quem "ganha" é quem teve melhor sorte de rede.
 
@@ -296,7 +296,7 @@ Adotei pipeline de admissão com FIFO honesto: o tempo de chegada à fila determ
 
 E aqui está um ponto que eu acho que não é óbvio: um sistema "rápido para alguns e indisponível para outros" é pior em NPS do que um sistema "lento para todos mas justo". Fairness afeta reputação de forma desproporcional, especialmente em eventos onde as pessoas têm expectativa emocional alta.
 
-## 6.4. Conflito 4 — Simplicidade Operacional vs Resiliência Maximal
+## 6.4. Conflito 4: Simplicidade Operacional vs Resiliência Maximal
 
 Maior resiliência (multi-região ativo-ativo, replicação assíncrona cross-region, autoscaling agressivo, chaos engineering regular) custa complexidade e dinheiro. O Driver 3 pede simplicidade.
 
@@ -304,7 +304,7 @@ A posição: **multi-AZ sim, multi-região não** no estágio atual. RTO de 15 m
 
 Multi-região tem custo de complexidade desproporcional ao ganho marginal de RPO/RTO neste momento. O dinheiro investido ali seria melhor gasto em observabilidade e runbooks bem mantidos.
 
-## 6.5. Conflito 5 — Acoplamento por Banco vs Pragmatismo
+## 6.5. Conflito 5: Acoplamento por Banco vs Pragmatismo
 
 Em monólito modular, o pragmatismo aponta para um único banco. Mas isso cria o risco do shared database antipattern: módulos lendo schemas alheios e criando acoplamento por dados que dificulta qualquer extração futura.
 

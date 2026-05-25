@@ -187,7 +187,7 @@ Saga implica:
 
 O monólito modular permite uma única transação ACID local que faz `confirma reserva → registra pagamento autorizado → emite ingresso` atomicamente. Zero janela de inconsistência, zero compensação. Essa é a vantagem concreta que justifica a escolha.
 
-Confesso que esse foi o ponto que mais discuti comigo mesmo ao escrever este documento. Existe uma pressão real — que já vi acontecer em outros projetos — de implementar Saga "para estar preparado". Mas o custo de complexidade é alto e o benefício só aparece quando os serviços forem de fato separados. Adiar Saga não é ingenuidade; é uma decisão de não pagar o custo hoje por um benefício que só vai existir amanhã.
+Confesso que esse foi o ponto que mais discuti comigo mesmo ao escrever este documento. Existe uma pressão real, que já vi acontecer em outros projetos, de implementar Saga "para estar preparado". Mas o custo de complexidade é alto e o benefício só aparece quando os serviços forem de fato separados. Adiar Saga não é ingenuidade; é uma decisão de não pagar o custo hoje por um benefício que só vai existir amanhã.
 
 ## 12.3. Como Saga entra como Evolução Futura (Quando Extrair Reserva)
 
@@ -256,20 +256,20 @@ Cada agregado tem um único módulo dono. O dono é o único que escreve. Todos 
 | `Reserva` | Reserva | Pagamento, Ingresso, Métricas | API de aplicação (`IReservaApi`) ou evento `Reserva.Confirmada.v1` |
 | `OrdemDePagamento` | Pagamento | Ingresso, Métricas | API de aplicação (`IPagamentoApi`) ou evento `Pagamento.Autorizado.v1` |
 | `Ingresso` | Ingresso | Notificação, Métricas, Comprador (via API HTTP) | Evento `Ingresso.Emitido.v1` |
-| `EnvioDeNotificacao` | Notificação | — | (interno) |
-| Projeções de Métricas | Métricas (CQRS) | Produtor (via API HTTP) | — |
+| `EnvioDeNotificacao` | Notificação |, | (interno) |
+| Projeções de Métricas | Métricas (CQRS) | Produtor (via API HTTP) |, |
 
 ## 13.3. Padrões de Leitura Cross-Module
 
-### Padrão A — Projeção Local por Evento (preferencial)
+### Padrão A: Projeção Local por Evento (preferencial)
 
 Quando um módulo precisa frequentemente de dados de outro, ele materializa uma projeção local alimentada por eventos. O módulo Métricas, por exemplo, mantém uma tabela `metricas.evento_vendas` alimentada por `Reserva.Confirmada.v1` e `Pagamento.Autorizado.v1`. Lê do próprio schema, sem chamar Catálogo ou Pagamento em runtime. O acoplamento é mínimo, a leitura é rápida, e a consistência eventual é aceitável nesse contexto. A desvantagem é duplicação controlada de dados e a necessidade de tratamento de eventos perdidos.
 
-### Padrão B — API de Aplicação In-Process
+### Padrão B: API de Aplicação In-Process
 
 Quando a leitura precisa ser fresca e síncrona (caso típico: Reserva consultando o Catálogo para validar que o evento está aberto para vendas no momento da reserva). Os dados são sempre frescos e a transação ACID funciona normalmente. A contrapartida é um acoplamento maior entre módulos; se algum dia extrair, essa chamada vira HTTP, e daí a importância de a interface já estar bem desenhada desde o início.
 
-### Padrão C — Cache para Disponibilidade
+### Padrão C: Cache para Disponibilidade
 
 O mapa de assentos é um caso especial: leitura altíssima, escrita por evento. Mantemos uma cópia no Redis, invalidada e atualizada via eventos `Reserva.Criada.v1` e `Reserva.Expirada.v1`. Nunca é fonte de verdade. É só otimização de leitura.
 
@@ -339,23 +339,23 @@ Arquiteto que só desenha caixinhas falha em metade do papel. A outra metade é 
 
 Para produto e negócio, o que importa são os drivers, os trade-offs principais em linguagem de negócio (sem "Saga", sem "CAP theorem") e o roadmap de evolução. Diagrama C4 nível 1 mais tabela de drivers costuma ser suficiente. Para o squad de engenharia, os ADRs no repositório, padrões internos, regras de fronteira e contratos de eventos, completados por sessões técnicas e pareamento. Para liderança técnica e CTO, um one-pager executivo com os riscos arquiteturais, os gatilhos de evolução e o custo total. Para SRE e operações, SLOs, runbooks e os pontos de falha conhecidos, com documentação operacional e game days. Para stakeholders externos como produtores e parceiros, só os contratos de API e o SLA público.
 
-## 15.2. Negociação de Requisitos — Padrões Recorrentes
+## 15.2. Negociação de Requisitos: Padrões Recorrentes
 
-### Caso 1 — "Por que tem fila? Tira a fila."
+### Caso 1: "Por que tem fila? Tira a fila."
 
 É produto, em reunião pós-lançamento, vendo NPS de fila. A fila é o que permite o sistema sobreviver ao pico; sem ela, o sistema cai e ninguém compra. A negociação passa por quantificar o trade-off em termos do produto: sem fila, 100% dos usuários têm experiência ruim por 5 minutos (sistema fora). Com fila, 80% esperam em média 90 segundos e completam a compra. É possível reduzir a fila aumentando capacidade do banco, mas o custo é X/mês. A decisão volta a ser do produto, mas com trade-off explícito na mesa.
 
-### Caso 2 — "A indústria está toda em microsserviços. Por que não nós?"
+### Caso 2: "A indústria está toda em microsserviços. Por que não nós?"
 
 Esse argumento vai aparecer em algum momento. A resposta é: microsserviços resolvem problemas que ainda não temos e impõem custos que não podemos pagar agora. ADR-001 documenta isso por escrito, e convido a leitura da avaliação comparativa (§8) e dos gatilhos de evolução (§16). Não é "nunca microsserviços", é "ainda não".
 
 Tenho uma preferência declarada por monólito modular, em parte por experiência própria: já vi mais sistemas sofrerem com microsserviços prematuros do que com monólitos disciplinados. Quando você está num time pequeno tentando manter 12 serviços em produção, cada um com seu próprio banco e pipeline, o custo operacional corrói a produtividade de um jeito que é difícil de prever antes de acontecer.
 
-### Caso 3 — "Notificações estão atrasando 30 segundos, é inaceitável."
+### Caso 3: "Notificações estão atrasando 30 segundos, é inaceitável."
 
 Notificações são eventualmente consistentes por design. 30 segundos pode ser otimizado, mas exigir sincronicidade quebra o caminho crítico. O primeiro passo é investigar: o atraso é "design" (consistência eventual aceitável) ou "regressão" (lag de broker, worker travado, throttling do provedor)? Se for design, educar o stakeholder com expectativa explícita ("seu e-mail chega em até 60s"). Se for regressão, é incidente.
 
-### Caso 4 — "Vamos adicionar um relatório que une todos os módulos."
+### Caso 4: "Vamos adicionar um relatório que une todos os módulos."
 
 Produto pedindo dashboard avançado. Não fazer JOIN cross-schema (ADR-005). A solução é via projeção em Métricas: é possível, é adicionar campos à projeção. Custo de desenvolvimento: X dias. Latência: em torno de 30 segundos (consistência eventual, OK para dashboard). Sair disso seria cair em antipattern documentado.
 
@@ -391,7 +391,7 @@ Sem escalabilidade granular por módulo: o custo de microsserviços excede o ben
 | Módulo viola fronteira (cross-schema, ciclo) | Baixa | Alto (longo prazo) | Lint + revisão + ADP em CI |
 | Equipe trata "monólito modular" como "monólito" sem disciplina | Média | Alto | ADRs como referência; rituais de revisão; campeão técnico no squad |
 
-## 16.3. Gatilhos para Evolução — Quando Extrair Reserva como Microsserviço
+## 16.3. Gatilhos para Evolução: Quando Extrair Reserva como Microsserviço
 
 A extração não é decisão por tempo. É decisão por métrica saturada. Os gatilhos:
 
@@ -436,13 +436,13 @@ Sei que algumas decisões aqui podem ser questionadas. A escolha de não usar Sa
 
 # 18. Vídeo Complementar
 
-> **[LINK DO VÍDEO YOUTUBE — a inserir após gravação]**
+> **[LINK DO VÍDEO YOUTUBE, a inserir após gravação]**
 >
 > Conteúdo previsto do vídeo (10–15 min):
 > 1. Apresentação do contexto e drivers (1 min)
 > 2. Justificativa do monólito modular vs microsserviços (3 min)
 > 3. Walkthrough dos diagramas C4 (3 min)
-> 4. ADRs principais — seat-locking e waiting room (3 min)
+> 4. ADRs principais, seat-locking e waiting room (3 min)
 > 5. Roadmap de evolução e gatilhos de extração (2 min)
 > 6. Encerramento e perguntas-âncora (1 min)
 
@@ -463,6 +463,6 @@ Sei que algumas decisões aqui podem ser questionadas. A escolha de não usar Sa
 
 ---
 
-> *Documento elaborado por Christian Chiavelli — 2026-05-24.
-> Entrega acadêmica de pós-graduação — disciplina de Arquitetura de Software.
-> Versão 1.0 — congelada para avaliação.*
+> *Documento elaborado por Christian Chiavelli, 2026-05-24.
+> Entrega acadêmica de pós-graduação, disciplina de Arquitetura de Software.
+> Versão 1.0, congelada para avaliação.*

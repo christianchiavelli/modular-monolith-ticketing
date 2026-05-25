@@ -9,6 +9,7 @@ desktop.ini
 *.swp
 *.swo
 
-# Output (caso gere PDF localmente via pandoc)
+# Build
 *.pdf
 !docs/*.pdf
+pdf-build/

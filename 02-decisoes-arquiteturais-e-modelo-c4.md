@@ -4,9 +4,9 @@ As decisões abaixo seguem um formato baseado no que Michael Nygard propôs para
 
 ---
 
-## ADR-001 — Adoção de Monólito Modular como Estilo Arquitetural Principal
+## ADR-001: Adoção de Monólito Modular como Estilo Arquitetural Principal
 
-**Status:** Aceito — 2026-05-24
+**Status:** Aceito, 2026-05-24
 **Decisores:** Arquiteto responsável (Christian Chiavelli), com homologação do time de engenharia e produto.
 
 ### Contexto
@@ -51,9 +51,9 @@ Adotar **Monólito Modular** como estilo principal, com:
 
 ---
 
-## ADR-002 — Estratégia de Seat-Locking via Reserva Temporária com TTL em Transação ACID Local
+## ADR-002: Estratégia de Seat-Locking via Reserva Temporária com TTL em Transação ACID Local
 
-**Status:** Aceito — 2026-05-24
+**Status:** Aceito, 2026-05-24
 
 ### Contexto
 
@@ -105,9 +105,9 @@ RETURNING reservation_id;
 
 ---
 
-## ADR-003 — Pipeline de Admissão (Virtual Waiting Room) na Entrada de Vendas
+## ADR-003: Pipeline de Admissão (Virtual Waiting Room) na Entrada de Vendas
 
-**Status:** Aceito — 2026-05-24
+**Status:** Aceito, 2026-05-24
 
 ### Contexto
 
@@ -143,9 +143,9 @@ Implementar uma **virtual waiting room** como **pipeline de admissão** entre o 
 
 ---
 
-## ADR-004 — Comunicação Assíncrona via Eventos de Domínio para Fluxos Não-Críticos
+## ADR-004: Comunicação Assíncrona via Eventos de Domínio para Fluxos Não-Críticos
 
-**Status:** Aceito — 2026-05-24
+**Status:** Aceito, 2026-05-24
 
 ### Contexto
 
@@ -187,9 +187,9 @@ Antipadrões que essa decisão evita explicitamente: dual write (escrever no ban
 
 ---
 
-## ADR-005 — Isolamento de Schemas por Módulo dentro de Cluster Relacional Único
+## ADR-005: Isolamento de Schemas por Módulo dentro de Cluster Relacional Único
 
-**Status:** Aceito — 2026-05-24
+**Status:** Aceito, 2026-05-24
 
 Mesmo dentro de um monólito modular, a forma como os dados são organizados determina o nível de acoplamento real. O antipadrão clássico é o *shared database*, que é particularmente perigoso porque é convidativo: nada impede tecnicamente um módulo de fazer `JOIN` no schema alheio "só dessa vez". Em 12 meses, os módulos ficam acoplados pelo banco e o gancho de extração futura morre.
 
@@ -296,7 +296,7 @@ A granularidade adotada para os módulos do monólito é bounded context, não "
 | **Pagamento** | Orquestração com Gateway externo; idempotência; reconciliação | `OrdemDePagamento` | `Pagamento.Autorizado.v1`, `Pagamento.Recusado.v1`, `Pagamento.Estornado.v1` |
 | **Ingresso** | Emissão e ciclo de vida do ingresso digital | `Ingresso` | `Ingresso.Emitido.v1`, `Ingresso.Invalidado.v1` |
 | **Notificação** | Orquestra envios; consume eventos do Pagamento/Ingresso | `EnvioDeNotificacao` | `Notificacao.Enviada.v1`, `Notificacao.Falhou.v1` |
-| **Métricas** | Projeções de leitura para produtores; agregações | (CQRS - projeções) | — (apenas consome) |
+| **Métricas** | Projeções de leitura para produtores; agregações | (CQRS - projeções) |, (apenas consome) |
 
 A granularidade é suficientemente grossa para que cada módulo seja uma unidade de raciocínio coerente, e suficientemente fina para que a extração futura de qualquer um seja viável.
 
@@ -330,7 +330,7 @@ A estrutura física de pastas (em estilo .NET / monorepo equivalente):
     ...
   /Metricas
     ...
-  /SharedKernel   (Value Objects partilhados: Money, EventId, etc — minimalista)
+  /SharedKernel   (Value Objects partilhados: Money, EventId, etc, minimalista)
   /Platform       (cross-cutting: outbox, eventos, observabilidade, autenticação)
 /tests
   /Unit
@@ -409,13 +409,13 @@ A arquitetura adotada habilita práticas saudáveis de engenharia e depende dela
 
 ---
 
-# 10. Modelo C4 — Visões em Três Níveis
+# 10. Modelo C4: Visões em Três Níveis
 
 > **Nota sobre as ferramentas.** Os diagramas a seguir estão em Mermaid por simplicidade de versionamento em texto puro e renderização nativa no GitHub e em PDF. A mesma estrutura está versionada em DSL do Structurizr no arquivo [`c4-structurizr/workspace.dsl`](../c4-structurizr/workspace.dsl), que é a ferramenta de referência do C4 Model (Simon Brown). As duas versões são consistentes entre si por construção.
 
 Os três diagramas a seguir são consistentes entre si: cada elemento no diagrama de nível superior aparece detalhado no inferior, sem contradições.
 
-## 10.1. Nível 1 — Contexto
+## 10.1. Nível 1: Contexto
 
 Mostra o sistema como **caixa única** em relação aos atores e sistemas externos. Responde: *quem usa o sistema e com quem ele conversa?*
 
@@ -446,7 +446,7 @@ flowchart TB
 - O **Provedor de Identidade** aparece neste nível porque OIDC é decisão arquitetural relevante (autenticação delegada).
 - Não há outros sistemas internos da organização neste estágio (o módulo administrativo está fora de escopo).
 
-## 10.2. Nível 2 — Contêineres
+## 10.2. Nível 2: Contêineres
 
 Abre o Sistema mostrando seus **contêineres** (unidades deployáveis e principais repositórios de estado). Responde: *quais são as peças e como conversam?*
 
@@ -515,7 +515,7 @@ flowchart TB
 4. **Virtual Waiting Room é externa**, serviço gerenciado, atendendo ADR-003 e Driver 3.
 5. **Cache não é fonte de verdade**: apenas otimização de leitura (mapa de assentos), idempotência e sessões. A consistência forte vive no banco.
 
-## 10.3. Nível 3 — Componentes (dentro da API Backend)
+## 10.3. Nível 3: Componentes (dentro da API Backend)
 
 Detalha o contêiner **API Backend**, mostrando os módulos (bounded contexts) internos e como respeitam a regra de dependência.
 
