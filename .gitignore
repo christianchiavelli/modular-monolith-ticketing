@@ -1,0 +1,14 @@
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Output (caso gere PDF localmente via pandoc)
+*.pdf
+!docs/*.pdf
