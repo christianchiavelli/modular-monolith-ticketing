@@ -548,18 +548,18 @@ flowchart TB
     APIGateway --> Notificacao
     APIGateway --> Metricas
 
-    Reserva -->|Consulta disponibilidade<br/>via API de aplicação| Catalogo
-    Pagamento -->|Confirma reserva<br/>via API de aplicação<br/>(transação ACID local)| Reserva
-    Ingresso -->|Lê dados da reserva<br/>confirmada| Reserva
-    Ingresso -->|Lê dados de pagamento<br/>autorizado| Pagamento
+    Reserva -->|Consulta disponibilidade via API de aplicação| Catalogo
+    Pagamento -->|"Confirma reserva via API de aplicação (transação ACID local)"| Reserva
+    Ingresso -->|Lê dados da reserva confirmada| Reserva
+    Ingresso -->|Lê dados de pagamento autorizado| Pagamento
 
     Catalogo -. publica eventos .-> Outbox
     Reserva -. publica eventos .-> Outbox
     Pagamento -. publica eventos .-> Outbox
     Ingresso -. publica eventos .-> Outbox
 
-    Notificacao -. lê projeções via eventos<br/>(consumidos pelo Worker) .-> Outbox
-    Metricas -. lê projeções via eventos<br/>(consumidos pelo Worker) .-> Outbox
+    Notificacao -. "lê projeções via eventos (consumidos pelo Worker)" .-> Outbox
+    Metricas -. "lê projeções via eventos (consumidos pelo Worker)" .-> Outbox
 
     Catalogo --> Observ
     Reserva --> Observ
