@@ -46,6 +46,12 @@ flowchart TB
 
 ---
 
+## Vídeo de Apresentação
+
+Apresentação em vídeo (até 5 min) cobrindo os drivers de negócio, os ADRs principais e os três níveis do C4: [`video/apresentacao.mp4`](./video/apresentacao.mp4).
+
+---
+
 ## Índice do Relatório
 
 O relatório tem três documentos.
